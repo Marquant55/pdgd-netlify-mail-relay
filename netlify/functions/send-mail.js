@@ -6,13 +6,30 @@ exports.handler = async (event) => {
       return reponseJson(405, { ok: false, message: 'Method not allowed' });
     }
 
-    const token =
+    const tokenRecu =
       event.headers['x-webhook-token'] ||
       event.headers['X-Webhook-Token'] ||
       '';
 
-    if (!token || token !== process.env.WEBHOOK_TOKEN) {
-      return reponseJson(401, { ok: false, message: 'Unauthorized' });
+    const tokenAttendu = process.env.WEBHOOK_TOKEN || '';
+
+    console.log('DEBUG method =', event.httpMethod);
+    console.log('DEBUG header x-webhook-token present =', !!tokenRecu);
+    console.log('DEBUG header x-webhook-token length =', tokenRecu.length);
+    console.log('DEBUG env WEBHOOK_TOKEN present =', !!tokenAttendu);
+    console.log('DEBUG env WEBHOOK_TOKEN length =', tokenAttendu.length);
+
+    if (!tokenRecu || tokenRecu !== tokenAttendu) {
+      return reponseJson(401, {
+        ok: false,
+        message: 'Unauthorized',
+        debug: {
+          token_recu_present: !!tokenRecu,
+          token_recu_length: tokenRecu.length,
+          token_attendu_present: !!tokenAttendu,
+          token_attendu_length: tokenAttendu.length
+        }
+      });
     }
 
     const data = JSON.parse(event.body || '{}');
@@ -62,6 +79,8 @@ exports.handler = async (event) => {
     });
 
   } catch (error) {
+    console.log('DEBUG erreur =', error.message || String(error));
+
     return reponseJson(500, {
       ok: false,
       message: error.message || String(error)
